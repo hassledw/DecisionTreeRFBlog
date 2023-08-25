@@ -174,7 +174,7 @@ y_test shape:  (80, 1)</code></pre>
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stderr">
-<pre><code>C:\Users\dwh71\AppData\Local\Temp\ipykernel_4352\1253239144.py:1: FutureWarning:
+<pre><code>C:\Users\dwh71\AppData\Local\Temp\ipykernel_34560\1253239144.py:1: FutureWarning:
 
 The default value of numeric_only in DataFrame.corr is deprecated. In a future version, it will default to False. Select only valid columns or specify the value of numeric_only to silence this warning.
 </code></pre>
@@ -185,7 +185,7 @@ The default value of numeric_only in DataFrame.corr is deprecated. In a future v
 </div>
 <p>The correlation matrix depicts the correlation between features (height, weight, gender, BMI) in the dataset. It uses the pearson’s correlation coefficient to compute this: <span class="math display">\[
 r =
-  \frac{ \sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y}) }{%
+  \frac{ \sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y}) }{
         \sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}}
 \]</span></p>
 <p>Based on the features presented, most are not correlated strongly, but there is a glaring strong correlation between weight and BMI.</p>
@@ -211,8 +211,8 @@ r =
 <span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Best Score:"</span>, grid_search_dt.best_score_)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Best Hyperparameters: {'criterion': 'entropy', 'max_depth': 8, 'min_samples_leaf': 1}
-Best Score: 0.81875</code></pre>
+<pre><code>Best Hyperparameters: {'criterion': 'entropy', 'max_depth': 7, 'min_samples_leaf': 2}
+Best Score: 0.840625</code></pre>
 </div>
 </div>
 <p>I recognized that <code>max_depth</code> was an important hyperparameter for the DecisionTree (DT), as the depth of the tree heavily influences overfitting, but other hyperparameters are important as well, such as:</p>
@@ -260,7 +260,7 @@ Gini(C) = 1 - \sum_{c=1}^Cp(c)^2
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="ss">f"Model Predictions With </span><span class="sc">{</span>(np.<span class="bu">sum</span>(confusion_matrix.diagonal()) <span class="op">/</span> y_test.shape[<span class="dv">0</span>]) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">% Accuracy"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="8">
-<pre><code>Text(0.5, 1.0, 'Model Predictions With 80.00% Accuracy')</code></pre>
+<pre><code>Text(0.5, 1.0, 'Model Predictions With 81.25% Accuracy')</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="index_files/figure-html/cell-9-output-2.png" width="529" height="431"></p>
@@ -292,8 +292,8 @@ Gini(C) = 1 - \sum_{c=1}^Cp(c)^2
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>(320, 1)
-Best Hyperparameters: {'criterion': 'gini', 'max_depth': 9, 'min_samples_leaf': 1}
-Best Score: 0.834375</code></pre>
+Best Hyperparameters: {'criterion': 'gini', 'max_depth': 8, 'min_samples_leaf': 1}
+Best Score: 0.83125</code></pre>
 </div>
 </div>
 <div class="cell" data-execution_count="10">
@@ -337,7 +337,7 @@ Best Score: 0.834375</code></pre>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="ss">f"Model Predictions With </span><span class="sc">{</span>(np.<span class="bu">sum</span>(confusion_matrix.diagonal()) <span class="op">/</span> y_test.shape[<span class="dv">0</span>]) <span class="op">*</span> <span class="dv">100</span><span class="sc">:.2f}</span><span class="ss">% Accuracy"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display" data-execution_count="12">
-<pre><code>Text(0.5, 1.0, 'Model Predictions With 83.75% Accuracy')</code></pre>
+<pre><code>Text(0.5, 1.0, 'Model Predictions With 85.00% Accuracy')</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="index_files/figure-html/cell-13-output-2.png" width="529" height="431"></p>

@@ -67,7 +67,7 @@ plt.show()
 The correlation matrix depicts the correlation between features (height, weight, gender, BMI) in the dataset. It uses the pearson's correlation coefficient to compute this:
 $$
  r =
-  \frac{ \sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y}) }{%
+  \frac{ \sum_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y}) }{
         \sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}}
 $$
 

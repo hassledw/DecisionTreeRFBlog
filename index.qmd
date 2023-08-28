@@ -1,10 +1,31 @@
 ---
-title: "Comparing Decision Tree and Random Forest Classifier Performance"
+execute:
+  echo: fenced
+title: "Comparing Decision Tree and Random Forest Classifier"
+toc: true
+toc-title: "Table of contents"
+format:
+  html:
+    embed-resources: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    theme:
+      dark: darkly
+      light: flatly
+  pdf:
+    colorlinks: true
+    pdf-engine: wkhtmltopdf
+  docx: default
+  ipynb: default
+  gfm: default
+jupyter: python3
+---
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
 format:
   html:
     code-fold: true
-jupyter: python3
----
+jupyter: python3 -->
 **Author: Daniel Hassler**
 
 ## Sample Data Used in Classification

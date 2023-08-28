@@ -13,9 +13,6 @@ format:
     theme:
       dark: darkly
       light: flatly
-  pdf:
-    colorlinks: true
-    pdf-engine: wkhtmltopdf
   docx: default
   ipynb: default
   gfm: default

@@ -13,6 +13,10 @@ format:
     theme:
       dark: darkly
       light: flatly
+    pdf:
+      title: "DecisionTreeAndRF"
+      author: "Daniel Hassler"
+      pdf-engine: "C:/Program Files (x86)/wkhtmltopdf"
   docx: default
   ipynb: default
   gfm: default
@@ -39,6 +43,7 @@ from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn import tree
 import matplotlib.pyplot as plt
 ```
+
 ```{python}
 data = pd.read_csv("./datasets/bmi_train.csv")
 category_mapping = {'Male': 0, 'Female': 1}

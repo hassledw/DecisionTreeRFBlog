@@ -20,6 +20,20 @@ format:
   docx: default
   ipynb: default
   gfm: default
+
+filters:
+  - social-share
+share:
+  permalink: "https://hassledw.github.io/DecisionTreeRFBlog/"
+  description: "Comparing RandomForestClassifier and DecisionTreeClassifier on BMI data"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: false
+  tumblr: false
+  linkedin: true
+  email: true
+
 jupyter: python3
 ---
 <!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
@@ -28,6 +42,13 @@ format:
     code-fold: true
 jupyter: python3 -->
 **Author: Daniel Hassler**
+
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+  <a href="https://github.com/hassledw"><i class="fab fa-github"></i></a>
+  <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a>
+  <!-- Add more social media links/icons as needed -->
+</div>
 
 ## Sample Data Used in Classification
 To compare a DecisionTree and a RandomForestClassifier, the first step I took was to gather some data and run some visualizations and analysis. Through Kaggle, I was able to obtain a small dataset on person features and their BMI (Body Mass Index) data. The data consists of just around 400 samples with features: gender, height, and weight, and the goal is to predict BMI. 
@@ -96,7 +117,7 @@ $$
 
 Based on the features presented, most are not correlated strongly, but there is a glaring strong correlation between weight and BMI. 
 
-## Building the Decision Tree Model
+## DecisionTreeClassifier
 
 In order to start the model building process, I decided to tune the hyperparamters first by running a `GridSearch`
 

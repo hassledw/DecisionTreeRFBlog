@@ -74,9 +74,6 @@ y = data.drop(['Gender', 'Gender_Encoded', 'Height', 'Weight'], axis=1)
 print("All X shape: ", X.shape)
 print("All y shape: ", y.shape)
 
-validation_data = pd.read_csv("./datasets/bmi_validation.csv")
-print("Validation data shape: ", validation_data.shape)
-
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 print("X_train shape: ", X_train.shape)
 print("y_train shape: ", y_train.shape)
@@ -85,6 +82,14 @@ print("y_test shape: ", y_test.shape)
 ```
 
 In the above code snippet, I first populated my data into a Pandas dataframe and then split up the data into a "training" and "testing" datasets. I decided to go with an 80/20% split between train and test (with its corresponding labels), as that seems to be the most standard approach in the industry. The significant benefit here is that I possess labeled data on both sets, a challenge in practice. This enables me to make comparisons between predictions and outcomes on my data, eliminating the need to procure any additional "test" data.
+```{python}
+plt.figure(figsize=(6, 6))
+sns.scatterplot(data=data, x='Height', y='Weight', hue='Index', palette='deep')
+plt.title('Scatter Plot of Height vs Weight')
+plt.show()
+```
+
+Next, I created a scatterplot showing the distribution of the entire dataset (n=400) to find linear associations. Based on the scatterplot above, I was roughly able to see that there was a class imbalance. 
 
 ```{python}
 # Class imbalance, more obesity.
@@ -115,7 +120,7 @@ $$
         \sqrt{\sum_{i=1}^{n}(x_i-\bar{x})^2}\sqrt{\sum_{i=1}^{n}(y_i-\bar{y})^2}}
 $$
 
-Based on the features presented, most are not correlated strongly, but there is a glaring strong correlation between weight and BMI. 
+Based on the features presented, most are not correlated strongly, but there is a glaring strong correlation between weight and BMI. It is also important to note that `gender` doesn't influence classification results, as the key factors to determining BMI is height and weight. 
 
 ## DecisionTreeClassifier
 
@@ -169,12 +174,16 @@ y_pred = dt.predict(X_test)
 I then created a `DecisionTreeClassifier` with the 'best' tuned hyperparameters from the above grid search and populated the `y_pred` array with the predictions from the test dataset. After that, I plotted the tree out using Sklearn's plot_tree method.
 
 ```{python}
-plt.figure(figsize=(40, 40))
+plt.figure(figsize=(10, 10))
 plot_tree(dt, feature_names=X_train.columns.tolist(), class_names=['0', '1', '2','3','4','5'], filled=True)
 plt.show()
 ```
 
-After plotting the tree, I created a confusion matrix, showing where my predictions fell. Currently, the model sits around 75-86% accurate due to the above hyperparameter values and the randomly generated tree with those hyperparameter values. Not bad for a small dataset with class imbalance. 
+After plotting the tree, I created a confusion matrix, showing where my predictions fell. Currently, the model sits around 75-86% accurate due to the above hyperparameter values and the randomly generated tree with those hyperparameter values. Not bad for a small dataset with class imbalance.
+```{python}
+print("Micro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='micro'))
+print("Macro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='macro'))
+``` 
 ```{python}
 confusion_matrix = sklearn.metrics.confusion_matrix(y_test, y_pred)
 conf_df = pd.DataFrame(confusion_matrix, index=[f"{i}" for i in range(6)], columns=[f"{i}" for i in range(6)])
@@ -232,7 +241,10 @@ Here is a visualizaiton of a subset of DecisionTrees in this RandomForest:
 ```
 
 After running the model, I checked the accuracy output of the prediction array and found that the RandomForestClassifier was able to increase the accuracy of the predictions by a considerable amount on average.
-
+```{python}
+print("Micro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='micro'))
+print("Macro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='macro'))
+``` 
 ```{python}
 confusion_matrix = sklearn.metrics.confusion_matrix(y_test, y_pred)
 conf_df = pd.DataFrame(confusion_matrix, index=[f"{i}" for i in range(6)], columns=[f"{i}" for i in range(6)])
@@ -277,6 +289,51 @@ plt.legend()
 plt.show()
 ```
 
+## Model Improvements
+
+Now that I've determined RandomForestClassifier as an overall better approach for this problem, I've included more ways to improve the current implementation.
+
+Earlier, I stated that `gender` may be a redudndant feature based on the correlation matrix, so I decided to drop that in the dataset when training the model.
+
+```{python}
+print(X_train.shape)
+print(y_train.shape)
+
+param_grid = {
+    'max_depth': [i for i in range(2, 10)],
+    'min_samples_leaf': [2 ** i for i in range(0, 4)],
+    'criterion': ["entropy", "gini"]
+}
+
+rf = RandomForestClassifier(random_state=42)
+grid_search_rf = GridSearchCV(rf, param_grid, cv=StratifiedKFold(n_splits=5), scoring='accuracy')
+grid_search_rf.fit(X_train.drop(['Gender_Encoded'], axis=1), y_train.values.ravel())
+best_params_rf = grid_search_rf.best_params_
+print("Best Hyperparameters:", best_params_rf)
+print("Best Score:", grid_search_rf.best_score_)
+
+rf = RandomForestClassifier(n_estimators=300, 
+                            max_depth=best_params_rf["max_depth"], 
+                            min_samples_leaf=best_params_rf["min_samples_leaf"],
+                            criterion=best_params_rf["criterion"])
+rf.fit(X_train.drop(['Gender_Encoded'], axis=1), y_train.values.ravel())
+y_pred = rf.predict(X_test.drop(['Gender_Encoded'], axis=1))
+```
+
+```{python}
+confusion_matrix = sklearn.metrics.confusion_matrix(y_test, y_pred)
+conf_df = pd.DataFrame(confusion_matrix, index=[f"{i}" for i in range(6)], columns=[f"{i}" for i in range(6)])
+heatmap = sns.heatmap(conf_df, annot=True, fmt="d", linewidths=0.35, cmap="YlGnBu")
+plt.title(f"Model Predictions With {(np.sum(confusion_matrix.diagonal()) / y_test.shape[0]) * 100:.2f}% Accuracy (NO GENDER)")
+```
+
+```{python}
+print("Micro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='micro'))
+print("Macro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='macro'))
+```
+
+It appears that removing that feature, on average, didn't hurt the preformance of the overall model.
+
 ## Results and Conclusions
 
 After doing simple experimentation with these models, I have found that, on average, the RandomForestClassifier outpreforms just a singular DecisionTreeClassifier. There are several advantages to having a forest of DecisionTrees rather than a singular tree:
@@ -285,6 +342,7 @@ After doing simple experimentation with these models, I have found that, on aver
 
 * Limits overfitting compared to a DT
 
-* DT has high variance and instability, so having a forest of them results in a more collective approach.
+* DT has high variance and instability, so having a forest of those trees in a more collective approach would help get more opinions at least.
 
 Though there is more resource complexity with a forest, the benefits of using that over a DT is worth the tradeoff. 
+

@@ -58,7 +58,7 @@ import sklearn
 import seaborn as sns
 import pandas as pd
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold, GridSearchCV
+from sklearn.model_selection import train_test_split, cross_val_score, StratifiedKFold, GridSearchCV, learning_curve, LearningCurveDisplay
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from sklearn import tree
@@ -128,8 +128,8 @@ In order to start the model building process, I decided to tune the hyperparamte
 
 ```{python}
 param_grid = {
-    'max_depth': [i for i in range(2, 10)],
-    'min_samples_leaf': [2 ** i for i in range(0, 4)],
+    'max_depth': [i for i in range(2, 6)],
+    'min_samples_leaf': [2 ** i for i in range(0, 6)],
     'criterion': ["entropy", "gini"]
 }
 
@@ -200,8 +200,8 @@ Though this step wasn't as necessary, since I already did the hyperparameter tun
 It is important to note that the `n_estimators` hyperparameter won't cause the model to overfit. In fact, it actually does better at generalization when increasing the number of estimators due to the diversity of opinions the model presents for each unique DecisionTree. The only way overfitting can happen in a RandomForest depends on how the underlying DecisionTrees are set up, not the quantity of them.
 ```{python}
 param_grid = {
-    'max_depth': [i for i in range(2, 10)],
-    'min_samples_leaf': [2 ** i for i in range(0, 4)],
+    'max_depth': [i for i in range(2, 6)],
+    'min_samples_leaf': [2 ** i for i in range(0, 6)],
     'criterion': ["entropy", "gini"]
 }
 
@@ -300,8 +300,8 @@ print(X_train.shape)
 print(y_train.shape)
 
 param_grid = {
-    'max_depth': [i for i in range(2, 10)],
-    'min_samples_leaf': [2 ** i for i in range(0, 4)],
+    'max_depth': [i for i in range(2, 6)],
+    'min_samples_leaf': [2 ** i for i in range(0, 6)],
     'criterion': ["entropy", "gini"]
 }
 
@@ -333,6 +333,17 @@ print("Macro F1: ", sklearn.metrics.f1_score(y_test, y_pred, average='macro'))
 ```
 
 It appears that removing that feature, on average, didn't hurt the preformance of the overall model.
+
+Finally, below is a learning curve showing accuracy results in respect to the number of samples in the training set. This plot is heavily dependent on the random state of the generated RandomForestClassifier and its underlying DecisionTrees. Sometimes the model is overfitting, so I tried minimizing the hyperparameter values to make sure it mostly doesn't.
+
+```{python}
+train_sizes, train_scores, test_scores = learning_curve(rf, X_train, y_train.values.ravel(), cv=StratifiedKFold(n_splits=5))
+display = LearningCurveDisplay(train_sizes=train_sizes,
+    train_scores=train_scores, test_scores=test_scores, score_name="Score")
+display.plot()
+plt.title("Learning Curve on RandomForestClassifer (NO GENDER)")
+plt.show()
+```
 
 ## Results and Conclusions
 

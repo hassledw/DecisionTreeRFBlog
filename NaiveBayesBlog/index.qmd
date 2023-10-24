@@ -1,0 +1,68 @@
+---
+execute:
+  echo: fenced
+title: "Probability Theory with Naive Bayes Application"
+toc: true
+toc-title: "Table of contents"
+format:
+  html:
+    embed-resources: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    theme:
+      dark: darkly
+      light: flatly
+    pdf:
+      title: "NaiveBayesProbTheory"
+      author: "Daniel Hassler"
+      pdf-engine: "C:/Program Files (x86)/wkhtmltopdf"
+  docx: default
+  ipynb: default
+  gfm: default
+
+filters:
+  - social-share
+share:
+  permalink: "https://hassledw.github.io/NaiveBayesBlog/"
+  description: "Probability Theory with Naive Bayes Application"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: false
+  tumblr: false
+  linkedin: true
+  email: true
+
+jupyter: python3
+---
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
+format:
+  html:
+    code-fold: true
+jupyter: python3 -->
+**Author: Daniel Hassler**
+
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+  <a href="https://github.com/hassledw"><i class="fab fa-github"></i></a>
+  <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a>
+  <!-- Add more social media links/icons as needed -->
+</div>
+
+## Naive Bayes Background
+
+## Data
+
+## Naive Bayes Classification
+
+### Hyperparameter Tuning
+
+## Results
+
+## Improvements
+Though we achieve decent accuracy with the MNIST dataset using `MultinomialNB` classifier, this model has one big flaw for image classification; it only looks at the discretized values for specific points in the image. What would happen if I shifted the "0" or "9" to a different section of the image (not centered)? it would not be able to classify this case effectively.
+
+A way to fix the above limitation is using convolutional neural networks (CNNs), which is a deep learning classifier used in a lot of computer vision and even NLP related applications. Its main feature is using the idea of a "sliding window" to find more meaningful representations, which means the location of the object we're classifying is less important.
+
+

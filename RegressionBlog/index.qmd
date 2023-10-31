@@ -1,0 +1,59 @@
+---
+execute:
+  echo: fenced
+title: "Linear and Non-Linear Regression"
+toc: true
+toc-title: "Table of contents"
+format:
+  html:
+    embed-resources: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    theme:
+      dark: darkly
+      light: flatly
+    pdf:
+      title: "LinearAndNonLinearReg"
+      author: "Daniel Hassler"
+      pdf-engine: "C:/Program Files (x86)/wkhtmltopdf"
+  docx: default
+  ipynb: default
+  gfm: default
+
+filters:
+  - social-share
+share:
+  permalink: "https://hassledw.github.io/ML-blog-posts/RegressionBlog/"
+  description: "Linear and Non-Linear Regression"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: false
+  tumblr: false
+  linkedin: true
+  email: true
+
+jupyter: python3
+---
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
+format:
+  html:
+    code-fold: true
+jupyter: python3 -->
+**Author: Daniel Hassler**
+
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+  <a href="https://github.com/hassledw"><i class="fab fa-github"></i></a>
+  <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a>
+  <!-- Add more social media links/icons as needed -->
+</div>
+
+## Introduction
+
+## Data
+
+## Linear Regression
+
+## Non-Linear Regression

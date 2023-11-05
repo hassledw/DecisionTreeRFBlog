@@ -186,9 +186,6 @@ print(f"Mean Squared Error: ${mean_squared_error(y_test, y_pred):,.2f}")
 Based on this data, the total difference (sum of all the differences) between the actual and predicted outputs could be better, as the average difference between the labels is around `270` = `$270,000`. The `MSE` is a common metric used in these types of problems, and my `MSE`(mean squared error) score is around 205 (`$205,000`), which is a respectable `MSE` value for this dataset due to its high standard deviation at (`$450,260.22`).
 
 ```{python}
-import matplotlib.pyplot as plt
-import pandas as pd
-
 plt.figure(figsize=(8,8))
 residuals = result_df['actual'] - result_df['predicted']
 
@@ -251,9 +248,6 @@ plt.show()
 Based on the above visualzation, using a polynomial function with degree `2`, shows interesting results. For the `Salary vs PutOuts` plot, the data plotted resembles a linear kernel, but in actuality it's a very zoomed in polynomial kernel. The `Salary vs I_PC1` showed a curve which I expected. It starts off at a peak and then lowers like a parabolic function (degree 2). The `Salary vs C_PC2` plot is interesting in the sense that it's a negative parabola; I would say this is not a fully representative curve as it seems to be fitting to the outlier at the end of the plot. Finally, the `Salary vs F_PC3` plot seems to be similar to the first plot as it resembles more of a linear kernel.
 
 ```{python}
-import matplotlib.pyplot as plt
-import pandas as pd
-
 plt.figure(figsize=(8,8))
 residuals = result_df['actual'] - result_df['predicted']
 

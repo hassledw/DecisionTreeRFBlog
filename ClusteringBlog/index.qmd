@@ -1,0 +1,161 @@
+---
+execute:
+  echo: fenced
+title: "Spotify Recommendation System With Clustering"
+toc: true
+toc-title: "Table of contents"
+format:
+  html:
+    embed-resources: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    theme:
+      dark: darkly
+      light: flatly
+    pdf:
+      title: "SpotifyRecommendationKMeans"
+      author: "Daniel Hassler"
+      pdf-engine: "C:/Program Files (x86)/wkhtmltopdf"
+  docx: default
+  ipynb: default
+  gfm: default
+
+filters:
+  - social-share
+share:
+  permalink: "https://hassledw.github.io/ML-blog-posts/ClusteringBlog/"
+  description: "Spotify Recommendation System Using K-Means"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: false
+  tumblr: false
+  linkedin: true
+  email: true
+
+jupyter: python3
+---
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
+format:
+  html:
+    code-fold: true
+jupyter: python3 -->
+**Author: Daniel Hassler**
+
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+  <a href="https://github.com/hassledw"><i class="fab fa-github"></i></a>
+  <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a>
+  <!-- Add more social media links/icons as needed -->
+</div>
+```{python}
+import pandas as pd
+import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.model_selection import train_test_split, ParameterGrid
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+```
+
+## Data Analysis
+Clustering algorithms can be applied to many real-world applications, including but not limited to security, anomaly detection, document clustering, stock market analysis, image compression, and so much more. The application I decided to approach with clustering is a song recommendation system. I found a dataset on Kaggle containing almost 114,000 songs from the popular music streaming platform Spotify. Each entry in the dataset consists of many features including `artists`, `track_name`, `track_genre`, `popularity`, `danceability`, and many more.
+
+Below are some visualizations showcasing certain features in a scatterplot. This gives me a rough idea what the dataset looks like with all of these features and genres.
+```{python}
+original_df = pd.read_csv("./dataset.csv")
+print(original_df.columns)
+features_x = ["loudness", "popularity", "duration_ms"]
+features_y = ["popularity", "energy", "tempo"]
+
+for i, (x,y) in enumerate(zip(features_x, features_y)):
+    scatter = sns.scatterplot(x=x, y=y, hue='track_genre', data=original_df, palette="viridis", alpha=0.25)
+    legend_labels = original_df['track_genre'].unique()# [:3]  # Show only the first 3 genres
+    scatter.legend(title='Genre', labels=legend_labels, prop={'size': 1})
+    plt.title(f"Scatter Plot of {x} vs {y} by genre")
+    plt.show()
+
+plt.show()
+```
+
+Because a lot of these continuous variables: `loudness`, `popularity`, `duration_ms` overlap by genre significantly, I decided to drop these features during training, as well as many other features like `energy`, `danceability`, `acousticness`, as these metrics are too complex, overlapping, and even subjective. As a Spotify consumer myself, I like when Spotify gives me songs related to the current artist I'm listening to, so I thought important features in this dataset included: `artists`, `track_genre`.
+
+## K-Means
+The K-Means algorithm clusters data by minimizing a criteria known as `intertia`, the within-cluster sum-of-squares. The formula for inertia, specified in the K-means documentation for Sklearn, is noted below:
+
+Noting some of the variables in the summation: `n` is the number of datapoints, `mu` is the mean of the cluster, also the cluster_centroid of the cluster `C`, `||x_i - \mu||^2` represents the squared euclidean distance between point `x_i` and the centroid, and min() takes the min of the calculation
+
+$$
+\sum_{i=0}^{n}\min_{\mu_j \in C}(||x_i - \mu_j||^2)
+$$
+
+A great benefit to K-means is its scalability to large sample sets, which is good for this problem since there are 114,000 points.
+
+### Hyperparameter Tuning
+The biggest hyperparameter for K-means is the number of clusters `n_clusters`. This hyperparameter is the amount of clusters to generate for the problem. Because the number of clusters largely effects the results of the model, it is important to tune this. In order to chose the best value, I loop through different values up to 200.
+```{python}
+inertia = []
+# train_df is the numeric representation of original_df
+train_df = original_df.drop(columns=["track_id"])
+
+for col in train_df.columns:
+    if not pd.api.types.is_numeric_dtype(train_df[col]):
+        train_df[col] = pd.factorize(original_df[col])[0]
+
+scaler = StandardScaler()
+# df_scaled is the scaled version of train_df
+df_scaled = scaler.fit_transform(train_df)
+
+for k in range(1, 200, 10):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit_predict(df_scaled)
+    inertia.append(kmeans.inertia_)
+```
+
+```{python}
+plt.plot(range(1, 200, 10), inertia, marker='o')
+plt.title('Elbow Method for Optimal K')
+plt.xlabel('Number of Clusters (K)')
+plt.ylabel('Inertia (Within-Cluster Sum of Squares)')
+plt.show()
+```
+
+The elbow chart is a great way to visualize intertia vs number of clusters on the dataset. Since our goal is to generalize well, it's not the best to choose the "lowest" inertia value. It is generally recommended in practice to choose the "elbow point"; I chose `23` as this looks very close to an elbow point for this distribution. Although, one drawback to this approach is its subjectiveness-- you might think the elbow point is 25, whereas I think the elbow point is 23.
+
+### K-Means for Spotify
+After taking the resulting elbow point, I run that through my own instance of kmeans, utilizing the Sklearn library, and store the predicted results into the original dataframe.
+```{python}
+kmeans = KMeans(n_clusters=23, random_state=42)
+original_df['clusters'] = kmeans.fit_predict(df_scaled)
+```
+
+## Evaluating K-Means for Spotify
+Below are some sample mini-clusters. Since the goal of this overall problem is to recommend music based on certain songs, I decided to create a function that grabs an entry from the CSV file, finds the cluster it's in, and computes the k-nearest neighbors of that song. These nearest neighbors would be the "recommendation" songs, in order.
+
+The general idea we should see with these mini-clusters are songs that resemble the query song. In the case of the first example, I ran my function on Daughtry's song "Home". The recommended song (top 1) example was 
+```{python}
+original_df['Distance_to_Centroid'] = kmeans.transform(df_scaled).min(axis=1)
+
+def get_nearest_entry(idx, k=5):
+    # print(original_df.iloc[idx])
+    # print(train_df.iloc[idx])
+    
+    cluster = kmeans.predict(df_scaled[idx].reshape(1,20))[0]
+    cluster_data = original_df[original_df["clusters"] == cluster]
+    cluster_data["closest_entries_to_idx"] = (original_df["Distance_to_Centroid"] - cluster_data.loc[idx]["Distance_to_Centroid"]).abs()
+    cluster_data = cluster_data.sort_values(by="closest_entries_to_idx")
+
+    cluster_data.drop(columns=["closest_entries_to_idx"])
+    print(f"Top {k} Closest Examples to {cluster_data.loc[idx]['artists']}'s \"{cluster_data.loc[idx]['track_name']}\"")
+    print(cluster_data[:5][["artists", "album_name", "track_name", "track_genre"]])
+    print("\n\n")
+
+get_nearest_entry(44151) # rock song
+get_nearest_entry(19015) # country song
+get_nearest_entry(51136) # rap song
+```
+
+## Conclusion

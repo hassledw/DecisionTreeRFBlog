@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="quarto-1.3.450" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+
+<meta name="author" content="Daniel Hassler" />
+<meta name="dcterms.date" content="2023-11-12" />
+
+<title>ML-Blog-Posts – Spotify Recommendation System With Clustering</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+<!-- htmldependencies:E3FAD763 -->
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  
+  <script>
+    (function () {
+      var script = document.createElement("script");
+      script.type = "text/javascript";
+      script.src  = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js";
+      document.getElementsByTagName("head")[0].appendChild(script);
+    })();
+  </script>
+
+
+<link rel="stylesheet" href="../../styles.css" />
+</head>
+
+<body>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="/index.html">
+    <span class="navbar-title">ML-Blog-Posts</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
+  aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation"
+  onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="/about.html" rel="" target="">
+ <span class="menu-text">About</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/hassledw" rel="" target=""><i 
+  class="bi bi-github" 
+  role="img" 
+>
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://www.linkedin.com/in/daniel-hassler-85027a21a/" rel="" target=""><i 
+  class="bi bi-linkedin" 
+  role="img" 
+>
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <div id="quarto-toc-target"></div>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+  <div class="quarto-title-banner">
+    <div class="quarto-title column-body">
+      <h1 class="title">Spotify Recommendation System With Clustering</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">code</div>
+                <div class="quarto-category">clustering</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Daniel Hassler </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 12, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header>
+<nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#data-analysis" id="toc-data-analysis">Data Analysis</a></li>
+  <li><a href="#k-means" id="toc-k-means">K-Means</a>
+  <ul>
+  <li><a href="#hyperparameter-tuning" id="toc-hyperparameter-tuning">Hyperparameter Tuning</a></li>
+  <li><a href="#k-means-for-spotify" id="toc-k-means-for-spotify">K-Means for Spotify</a></li>
+  </ul></li>
+  <li><a href="#evaluating-k-means-for-spotify" id="toc-evaluating-k-means-for-spotify">Evaluating K-Means for Spotify</a></li>
+  <li><a href="#conclusion" id="toc-conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
+format:
+  html:
+    code-fold: true
+jupyter: python3 -->
+<p><strong>Author: Daniel Hassler</strong></p>
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+<p><a href="https://github.com/hassledw"><i class="fab fa-github"></i></a> <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a> <!-- Add more social media links/icons as needed --></p>
+</div>
+<div class="cell" data-execution_count="1">
+<div class="sourceCode" id="cb1"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> KMeans, DBSCAN</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split, ParameterGrid</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> PCA</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> silhouette_score</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+</div>
+<section id="data-analysis" class="level2">
+<h2>Data Analysis</h2>
+<p>Clustering algorithms can be applied to many real-world applications, including but not limited to security, anomaly detection, document clustering, stock market analysis, image compression, and so much more. The application I decided to approach with clustering is a song recommendation system. I found a dataset on Kaggle containing almost <code>114,000</code> songs from the popular music streaming platform Spotify. Each entry in the dataset consists of many features including <code>artists</code>, <code>track_name</code>, <code>track_genre</code>, <code>popularity</code>, <code>danceability</code>, and many more.</p>
+<p>Before I dive into the visualizaitons, I first dropped duplicates in the dataset to minimize problems with recommendations. Now, below are some visualizations showcasing certain features in a scatterplot. This gives me a rough idea what the dataset looks like with all of these features and genres.</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode" id="cb2"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>original_df <span class="op">=</span> pd.read_csv(<span class="st">&quot;./dataset-dedup.csv&quot;</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(original_df.columns)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># original_df = original_df.drop_duplicates(subset=[&quot;artists&quot;, &quot;track_name&quot;], keep=&quot;first&quot;).reset_index()</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(original_df.shape)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># original_df.to_csv(&quot;./dataset-dedup.csv&quot;)</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>features_x <span class="op">=</span> [<span class="st">&quot;loudness&quot;</span>, <span class="st">&quot;popularity&quot;</span>, <span class="st">&quot;duration_ms&quot;</span>]</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>features_y <span class="op">=</span> [<span class="st">&quot;popularity&quot;</span>, <span class="st">&quot;energy&quot;</span>, <span class="st">&quot;tempo&quot;</span>]</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, (x,y) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(features_x, features_y)):</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    scatter <span class="op">=</span> sns.scatterplot(x<span class="op">=</span>x, y<span class="op">=</span>y, hue<span class="op">=</span><span class="st">&#39;track_genre&#39;</span>, data<span class="op">=</span>original_df, palette<span class="op">=</span><span class="st">&quot;viridis&quot;</span>, alpha<span class="op">=</span><span class="fl">0.25</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    legend_labels <span class="op">=</span> original_df[<span class="st">&#39;track_genre&#39;</span>].unique()<span class="co"># [:3]  # Show only the first 3 genres</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    scatter.legend(title<span class="op">=</span><span class="st">&#39;Genre&#39;</span>, labels<span class="op">=</span>legend_labels, prop<span class="op">=</span>{<span class="st">&#39;size&#39;</span>: <span class="dv">1</span>})</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    plt.title(<span class="ss">f&quot;Scatter Plot of </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss"> vs </span><span class="sc">{</span>y<span class="sc">}</span><span class="ss"> by genre&quot;</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Index([&#39;Unnamed: 0.1&#39;, &#39;index&#39;, &#39;Unnamed: 0&#39;, &#39;track_id&#39;, &#39;artists&#39;,
+       &#39;album_name&#39;, &#39;track_name&#39;, &#39;popularity&#39;, &#39;duration_ms&#39;, &#39;explicit&#39;,
+       &#39;danceability&#39;, &#39;energy&#39;, &#39;key&#39;, &#39;loudness&#39;, &#39;mode&#39;, &#39;speechiness&#39;,
+       &#39;acousticness&#39;, &#39;instrumentalness&#39;, &#39;liveness&#39;, &#39;valence&#39;, &#39;tempo&#39;,
+       &#39;time_signature&#39;, &#39;track_genre&#39;],
+      dtype=&#39;object&#39;)
+(81344, 23)</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-3-output-2.png" width="593" height="449" /></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-3-output-3.png" width="589" height="449" /></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-3-output-4.png" width="593" height="449" /></p>
+</div>
+</div>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode" id="cb4"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>unique_vals <span class="op">=</span> original_df[<span class="st">&#39;track_genre&#39;</span>].unique()</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>plt.bar(unique_vals, original_df[<span class="st">&#39;track_genre&#39;</span>].value_counts())</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&quot;Occurrence of Genre&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">&quot;Count&quot;</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">&quot;Genre&quot;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> plt.xticks(rotation<span class="op">=</span><span class="st">&quot;vertical&quot;</span>, fontsize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-4-output-1.png" width="601" height="486" /></p>
+</div>
+</div>
+<p>Because a lot of these continuous variables: <code>loudness</code>, <code>popularity</code>, <code>duration_ms</code> overlap by genre significantly, I decided to drop these features during training, as well as many other features like <code>energy</code>, <code>danceability</code>, <code>acousticness</code>, as these metrics are too complex, overlapping, and even subjective. As a Spotify consumer myself, I like when Spotify gives me songs related to the current artist I’m listening to, so I thought important features in this dataset included: <code>artists</code>, <code>track_genre</code>, minimally. Although, I did try other features like <code>key</code>, and <code>tempo</code> on top of that.</p>
+</section>
+<section id="k-means" class="level2">
+<h2>K-Means</h2>
+<p>The K-Means algorithm clusters data by minimizing a criteria known as <code>intertia</code>, the within-cluster sum-of-squares. The formula for inertia, specified in the K-means documentation for Sklearn, is noted below:</p>
+<p>Noting some of the variables in the summation: <code>n</code> is the number of datapoints, <code>mu</code> is the mean of the cluster, also the cluster_centroid of the cluster <code>C</code>, <code>||x_i - \mu||^2</code> represents the squared euclidean distance between point <code>x_i</code> and the centroid, and min() takes the min of the calculation</p>
+<p><span class="math display">\[
+\sum_{i=0}^{n}\min_{\mu_j \in C}(||x_i - \mu_j||^2)
+\]</span></p>
+<p>It is worth noting that the inertia method has some drawbacks. According to Sklearn, intertia makes the assumption that clusters are convex and isotropic, which may not always be the case. The documentation also states that inertia isn’t a “normalized metric”, so running PCA (principal component analysis) before the K-means clustering is beneficial (which is exactly what I did in later steps).</p>
+<p>A great benefit to K-means is its scalability to large sample sets, which is good for this problem since there are now <code>81,344</code> points.</p>
+<section id="hyperparameter-tuning" class="level3">
+<h3>Hyperparameter Tuning</h3>
+<p>The biggest hyperparameter for K-means is the number of clusters <code>n_clusters</code>. This hyperparameter is the amount of clusters to generate for the problem. Because the number of clusters largely effects the results of the model, it is important to tune this. In order to chose the best value, I loop through different values up to 80.</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode" id="cb5"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>inertia <span class="op">=</span> []</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># train_df is the numeric representation of original_df</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>train_df <span class="op">=</span> original_df.drop(columns<span class="op">=</span>[<span class="st">&#39;Unnamed: 0.1&#39;</span>, <span class="st">&#39;index&#39;</span>, <span class="st">&#39;Unnamed: 0&#39;</span>, <span class="st">&#39;track_id&#39;</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;album_name&#39;</span>, <span class="st">&#39;track_name&#39;</span>, <span class="st">&#39;popularity&#39;</span>, <span class="st">&#39;duration_ms&#39;</span>, <span class="st">&#39;explicit&#39;</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;danceability&#39;</span>, <span class="st">&#39;energy&#39;</span>, <span class="st">&#39;loudness&#39;</span>, <span class="st">&#39;mode&#39;</span>, <span class="st">&#39;speechiness&#39;</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;acousticness&#39;</span>, <span class="st">&#39;instrumentalness&#39;</span>, <span class="st">&#39;liveness&#39;</span>, <span class="st">&#39;valence&#39;</span>, <span class="st">&#39;tempo&#39;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;time_signature&#39;</span>])</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> col <span class="kw">in</span> train_df.columns:</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> pd.api.types.is_numeric_dtype(train_df[col]):</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        train_df[col] <span class="op">=</span> pd.factorize(original_df[col])[<span class="dv">0</span>]</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co"># df_scaled is the scaled version of train_df</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>df_scaled <span class="op">=</span> scaler.fit_transform(train_df)</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>pca_num_components <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co"># df_pca to reduce dimensionality</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span>pca_num_components).fit_transform(df_scaled)</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>df_pca <span class="op">=</span> pd.DataFrame(pca,columns<span class="op">=</span>[<span class="st">&#39;pca1&#39;</span>,<span class="st">&#39;pca2&#39;</span>])</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">80</span>, <span class="dv">10</span>):</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span>k, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    kmeans.fit_predict(df_pca)</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    inertia.append(kmeans.inertia_)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode" id="cb7"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>plt.plot(<span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">80</span>, <span class="dv">10</span>), inertia, marker<span class="op">=</span><span class="st">&#39;o&#39;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Elbow Method for Optimal K&#39;</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">&#39;Number of Clusters (K)&#39;</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">&#39;Inertia (Within-Cluster Sum of Squares)&#39;</span>)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-6-output-1.png" width="618" height="449" /></p>
+</div>
+</div>
+<p>The elbow chart is a great way to visualize intertia vs number of clusters on the dataset. Since our goal is to generalize well, it’s not the best to choose the “lowest” inertia value. It is generally recommended in practice to choose the “elbow point”; I chose <code>10</code> as this looks very close to an elbow point for this distribution. Although, one drawback to this approach is its subjectiveness– you might think the elbow point is 12, whereas I think the elbow point is 10.</p>
+</section>
+<section id="k-means-for-spotify" class="level3">
+<h3>K-Means for Spotify</h3>
+<p>After taking the resulting elbow point, I run that through my own instance of kmeans, utilizing the Sklearn library, and store the predicted results into the original dataframe.</p>
+<div class="cell" data-execution_count="6">
+<div class="sourceCode" id="cb8"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;clusters&#39;</span>] <span class="op">=</span> kmeans.fit_predict(df_pca)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)</code></pre>
+</div>
+</div>
+<div class="cell" data-execution_count="7">
+<div class="sourceCode" id="cb10"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(x<span class="op">=</span><span class="st">&quot;pca1&quot;</span>, y<span class="op">=</span><span class="st">&quot;pca2&quot;</span>, hue<span class="op">=</span>original_df[<span class="st">&#39;clusters&#39;</span>], data<span class="op">=</span>df_pca)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;K-means Clustering PCA of 3 features [track_genre, artists, key]&#39;</span>)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-8-output-1.png" width="600" height="449" /></p>
+</div>
+</div>
+<p>This is a PCA visualization of the clusters on the feature set <code>track_genre</code>, <code>artists</code> and <code>key</code>.</p>
+</section>
+</section>
+<section id="evaluating-k-means-for-spotify" class="level2">
+<h2>Evaluating K-Means for Spotify</h2>
+<p>Below are some sample mini-clusters. Since the goal of this overall problem is to recommend music based on certain songs, I decided to create a function that grabs an entry from the CSV file, finds the cluster it’s in, and computes the k-nearest neighbors of that song. These nearest neighbors would be the “recommendation” songs, in order.</p>
+<p>The general idea we should see with these mini-clusters are songs that resemble the query song. In the case of the first example, I ran my function on Daughtry’s song “Home”. The recommended song (top 1) example was another Daughtry song “It’s Not Over”.</p>
+<p>When testing out different K-means implementations on different features, I found that simplicity is key. Having a ton of features is great for any dataset, but knowing how they interact with each other and how to simplify the problem makes for better results. I tested many different subsests of features including:</p>
+<ol type="1">
+<li>all of the original dataset features (n=20)</li>
+<li>subset of continuous variables</li>
+<li>subset of just track_genre and artists</li>
+<li>subset of track_genre, artists, tempo, and key. All of which are discrete, factual features.</li>
+<li>subset of track_genre, artists, and key.</li>
+</ol>
+<p>My final result ended up being the last option, although those did not generate the most <code>similar</code> clusters, especially compared to option 3. Although, I chose the last option as I was trying to find similar songs while spanning across other artists. Option 5 seemed to give me similar options across at least one or more genres with different artists. It is worth noting that some of the results gave me the same artists, which is good since those are similar songs too.</p>
+<div class="cell" data-execution_count="8">
+<div class="sourceCode" id="cb11"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;Distance_to_Centroid&#39;</span>] <span class="op">=</span> kmeans.transform(df_pca).<span class="bu">min</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_nearest_entry(idx, k<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(original_df.iloc[idx])</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(train_df.iloc[idx])</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    cluster <span class="op">=</span> kmeans.predict(df_pca.iloc[idx].to_frame().T)[<span class="dv">0</span>]</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    cluster_data <span class="op">=</span> original_df[original_df[<span class="st">&quot;clusters&quot;</span>] <span class="op">==</span> cluster]</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    cluster_data[<span class="st">&quot;closest_entries_to_idx&quot;</span>] <span class="op">=</span> (cluster_data[<span class="st">&quot;Distance_to_Centroid&quot;</span>] <span class="op">-</span> cluster_data.loc[idx][<span class="st">&quot;Distance_to_Centroid&quot;</span>]).<span class="bu">abs</span>()</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    cluster_data <span class="op">=</span> cluster_data.sort_values(by<span class="op">=</span><span class="st">&quot;closest_entries_to_idx&quot;</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(cluster_data[[&quot;artists&quot;, &quot;album_name&quot;, &quot;track_name&quot;, &quot;track_genre&quot;]])</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    cluster_data.drop(columns<span class="op">=</span>[<span class="st">&quot;closest_entries_to_idx&quot;</span>])</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Top </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> Closest Examples to </span><span class="sc">{</span>cluster_data<span class="sc">.</span>loc[idx][<span class="st">&#39;artists&#39;</span>]<span class="sc">}</span><span class="ss">&#39;s </span><span class="ch">\&quot;</span><span class="sc">{</span>cluster_data<span class="sc">.</span>loc[idx][<span class="st">&#39;track_name&#39;</span>]<span class="sc">}</span><span class="ch">\&quot;</span><span class="ss">&quot;</span>)</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(cluster_data[:k][[<span class="st">&quot;artists&quot;</span>, <span class="st">&quot;track_name&quot;</span>, <span class="st">&quot;track_genre&quot;</span>]])</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">35640</span>) <span class="co"># rock song</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">16587</span>) <span class="co"># country song</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">41220</span>) <span class="co"># rap song</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Top 5 Closest Examples to Daughtry&#39;s &quot;September&quot;
+            artists               track_name     track_genre
+35640      Daughtry                September          grunge
+35381      Daughtry            It&#39;s Not Over          grunge
+35839    Stone Sour                 Hesitate          grunge
+55666    Mark Broom                Five/Four  minimal-techno
+40063  TNT;POPR3B3L  I&#39;m Raving - Radio Edit       hardstyle
+
+
+
+Top 5 Closest Examples to Florida Georgia Line&#39;s &quot;Stay&quot;
+                    artists  \
+16587  Florida Georgia Line   
+8395    Datsik;Virtual Riot   
+8582            The Prodigy   
+8819            The Prodigy   
+8529            The Prodigy   
+
+                                              track_name track_genre  
+16587                                               Stay     country  
+8395                                               Nasty   breakbeat  
+8582                                               Girls   breakbeat  
+8819                                  We Are The Ruffest   breakbeat  
+8529   Out of Space - Techno Underworld Remix Remastered   breakbeat  
+
+
+
+Top 5 Closest Examples to Future;Lil Uzi Vert&#39;s &quot;Tic Tac&quot;
+                                          artists              track_name  \
+41220                         Future;Lil Uzi Vert                 Tic Tac   
+43994  Pritam;Arijit Singh;Shadab;Altamash Faridi  Lambiyaan Si Judaiyaan   
+41226                                    Lil Baby                  All In   
+43981     Pritam;Sukhwinder Singh;Sunidhi Chauhan                Marjaani   
+41207                    Zack Knight;Jasmin Walia         Bom Diggy Diggy   
+
+      track_genre  
+41220     hip-hop  
+43994      indian  
+41226     hip-hop  
+43981      indian  
+41207     hip-hop  
+
+
+</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()
+C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()
+C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()</code></pre>
+</div>
+</div>
+<p>Option 3 on the other hand gave me different songs for the same artists, which is fine for a recommendation system, but not what I was exactly going for. Below is a visualization of the clusters with just two features as well as its predictions.</p>
+<div class="cell" data-execution_count="9">
+<div class="sourceCode" id="cb14"><pre class="sourceCode markdown cell-code"><code class="sourceCode markdown"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="in">```{python}</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>original_df <span class="op">=</span> pd.read_csv(<span class="st">&quot;./dataset-dedup.csv&quot;</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># train_df is the numeric representation of original_df</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>train_df <span class="op">=</span> original_df.drop(columns<span class="op">=</span>[<span class="st">&#39;Unnamed: 0.1&#39;</span>, <span class="st">&#39;index&#39;</span>, <span class="st">&#39;Unnamed: 0&#39;</span>, <span class="st">&#39;track_id&#39;</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;album_name&#39;</span>, <span class="st">&#39;track_name&#39;</span>, <span class="st">&#39;popularity&#39;</span>, <span class="st">&#39;duration_ms&#39;</span>, <span class="st">&#39;explicit&#39;</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;danceability&#39;</span>, <span class="st">&#39;key&#39;</span>, <span class="st">&#39;energy&#39;</span>, <span class="st">&#39;loudness&#39;</span>, <span class="st">&#39;mode&#39;</span>, <span class="st">&#39;speechiness&#39;</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;acousticness&#39;</span>, <span class="st">&#39;instrumentalness&#39;</span>, <span class="st">&#39;liveness&#39;</span>, <span class="st">&#39;valence&#39;</span>, <span class="st">&#39;tempo&#39;</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;time_signature&#39;</span>])</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> col <span class="kw">in</span> train_df.columns:</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> pd.api.types.is_numeric_dtype(train_df[col]):</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        train_df[col] <span class="op">=</span> pd.factorize(original_df[col])[<span class="dv">0</span>]</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="co"># df_scaled is the scaled version of train_df</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>df_scaled <span class="op">=</span> scaler.fit_transform(train_df)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>pca_num_components <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co"># df_pca to reduce dimensionality</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span>pca_num_components).fit_transform(df_scaled)</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>df_pca <span class="op">=</span> pd.DataFrame(pca,columns<span class="op">=</span>[<span class="st">&#39;pca1&#39;</span>,<span class="st">&#39;pca2&#39;</span>])</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;clusters&#39;</span>] <span class="op">=</span> kmeans.fit_predict(df_pca)</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(x<span class="op">=</span><span class="st">&quot;pca1&quot;</span>, y<span class="op">=</span><span class="st">&quot;pca2&quot;</span>, hue<span class="op">=</span>original_df[<span class="st">&#39;clusters&#39;</span>], data<span class="op">=</span>df_pca)</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;K-means Clustering PCA of 2 features [track_genre, artists]&#39;</span>)</span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;Distance_to_Centroid&#39;</span>] <span class="op">=</span> kmeans.transform(df_pca).<span class="bu">min</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">35640</span>) <span class="co"># rock song</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">16587</span>) <span class="co"># country song</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">41220</span>) <span class="co"># rap song</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span></code></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>D:\Users\dwh71\AppData\Local\Programs\Python\Python310\lib\site-packages\sklearn\cluster\_kmeans.py:1416: FutureWarning: The default value of `n_init` will change from 10 to &#39;auto&#39; in 1.4. Set the value of `n_init` explicitly to suppress the warning
+  super()._check_params_vs_input(X, default_n_init=10)
+C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()
+C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()
+C:\Users\dwh71\AppData\Local\Temp\ipykernel_16264\3657151199.py:8: SettingWithCopyWarning: 
+A value is trying to be set on a copy of a slice from a DataFrame.
+Try using .loc[row_indexer,col_indexer] = value instead
+
+See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+  cluster_data[&quot;closest_entries_to_idx&quot;] = (cluster_data[&quot;Distance_to_Centroid&quot;] - cluster_data.loc[idx][&quot;Distance_to_Centroid&quot;]).abs()</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="index_files/figure-html/cell-10-output-2.png" width="589" height="449" /></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Top 5 Closest Examples to Daughtry&#39;s &quot;September&quot;
+        artists            track_name track_genre
+35439  Daughtry  Waiting for Superman      grunge
+35678  Daughtry         Gone Too Soon      grunge
+35802  Daughtry            I&#39;ll Fight      grunge
+35640  Daughtry             September      grunge
+35336  Daughtry                  Home      grunge
+
+
+
+Top 5 Closest Examples to Florida Georgia Line&#39;s &quot;Stay&quot;
+                    artists         track_name track_genre
+16592  Florida Georgia Line  I Love My Country     country
+16587  Florida Georgia Line               Stay     country
+16938  Florida Georgia Line           H.O.L.Y.     country
+16598  Florida Georgia Line           Sun Daze     country
+16975  Florida Georgia Line               Life     country
+
+
+
+Top 5 Closest Examples to Future;Lil Uzi Vert&#39;s &quot;Tic Tac&quot;
+                   artists              track_name track_genre
+41220  Future;Lil Uzi Vert                 Tic Tac     hip-hop
+39123            Lionheart                  Cursed    hardcore
+39035            Lionheart                LHHC &#39;17    hardcore
+39040              Bodyjar  A Hazy Shade of Winter    hardcore
+39033         Naked Raygun              Rat Patrol    hardcore
+
+
+</code></pre>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2>Conclusion</h2>
+<p>In this blog post, I used K-means as a clustering algorithm for a song recommendation system. Though K-means does a good job at coming up with clusters and generating similar examples, other clustering algorithms such as DBSCAN may be a suitable option as well. In general, what I like about clustering algorithms for this problem domain, especially K-means, is its free range to determine what logical clusters should look like and its intuitiveness. There’s not only one correct way to do K-means.</p>
+<div id="quarto-navigation-envelope" class="hidden">
+<p><span class="hidden" data-render-id="quarto-int-sidebar-title">ML-Blog-Posts</span> <span class="hidden" data-render-id="quarto-int-navbar-title">ML-Blog-Posts</span> <span class="hidden" data-render-id="quarto-int-navbar:About">About</span> <span class="hidden" data-render-id="quarto-int-navbar:/about.html">/about.html</span> <span class="hidden" data-render-id="quarto-int-navbar:https://github.com/hassledw">https://github.com/hassledw</span> <span class="hidden" data-render-id="quarto-int-navbar:https://www.linkedin.com/in/daniel-hassler-85027a21a/">https://www.linkedin.com/in/daniel-hassler-85027a21a/</span></p>
+</div>
+<div id="quarto-meta-markdown" class="hidden">
+<p><span class="hidden" data-render-id="quarto-metatitle">ML-Blog-Posts - Spotify Recommendation System With Clustering</span> <span class="hidden" data-render-id="quarto-twittercardtitle">ML-Blog-Posts - Spotify Recommendation System With Clustering</span> <span class="hidden" data-render-id="quarto-ogcardtitle">ML-Blog-Posts - Spotify Recommendation System With Clustering</span> <span class="hidden" data-render-id="quarto-metasitename">ML-Blog-Posts</span> <span class="hidden" data-render-id="quarto-twittercarddesc"></span> <span class="hidden" data-render-id="quarto-ogcardddesc"></span></p>
+</div>
+<!-- -->
+<div class="quarto-embedded-source-code">
+<div class="sourceCode" id="cb17" data-shortcodes="false"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="an">execute:</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co">  echo: fenced</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> &quot;Spotify Recommendation System With Clustering&quot;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="an">author:</span><span class="co"> &quot;Daniel Hassler&quot;</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> &quot;2023-11-12&quot;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="an">categories:</span><span class="co"> [code, clustering]</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="an">image:</span><span class="co"> &quot;spotify.png&quot;</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="an">toc:</span><span class="co"> true</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="an">toc-title:</span><span class="co"> &quot;Table of contents&quot;</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="co">    embed-resources: true</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co">    code-copy: true</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="co">    code-link: true</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="co">    theme:</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co">      dark: darkly</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="co">      light: flatly</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="co">    pdf:</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="co">      title: &quot;SpotifyRecommendationKMeans&quot;</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="co">      author: &quot;Daniel Hassler&quot;</span></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="co">      pdf-engine: &quot;C:/Program Files (x86)/wkhtmltopdf&quot;</span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a><span class="co">  docx: default</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="co">  ipynb: default</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="co">  gfm: default</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a><span class="an">filters:</span></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a><span class="co">  - social-share</span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="an">share:</span></span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a><span class="co">  permalink: &quot;https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/&quot;</span></span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a><span class="co">  description: &quot;Spotify Recommendation System Using K-Means&quot;</span></span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a><span class="co">  twitter: true</span></span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a><span class="co">  facebook: true</span></span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a><span class="co">  reddit: true</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a><span class="co">  stumble: false</span></span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a><span class="co">  tumblr: false</span></span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a><span class="co">  linkedin: true</span></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a><span class="co">  email: true</span></span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a><span class="an">jupyter:</span><span class="co"> python3</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- title: &quot;Comparing Decision Tree and Random Forest Classifier Performance&quot;</span></span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a><span class="co">format:</span></span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a><span class="co">    code-fold: true</span></span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a><span class="co">jupyter: python3 --&gt;</span></span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>**Author: Daniel Hassler**</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;link</span> <span class="er">rel</span><span class="ot">=</span><span class="st">&quot;stylesheet&quot;</span> <span class="er">type</span><span class="ot">=</span><span class="st">&quot;text/css&quot;</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;./index.css&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;div</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;social-icons&quot;</span><span class="kw">&gt;</span></span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;a</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;https://github.com/hassledw&quot;</span><span class="kw">&gt;&lt;i</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;fab fa-github&quot;</span><span class="kw">&gt;&lt;/i&gt;&lt;/a&gt;</span></span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a>  <span class="kw">&lt;a</span> <span class="er">href</span><span class="ot">=</span><span class="st">&quot;https://www.linkedin.com/in/daniel-hassler-85027a21a/&quot;</span><span class="kw">&gt;&lt;i</span> <span class="er">class</span><span class="ot">=</span><span class="st">&quot;fab fa-linkedin&quot;</span><span class="kw">&gt;&lt;/i&gt;&lt;/a&gt;</span></span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>  <span class="co">&lt;!-- Add more social media links/icons as needed --&gt;</span></span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a><span class="kw">&lt;/div&gt;</span></span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.cluster <span class="im">import</span> KMeans, DBSCAN</span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> train_test_split, ParameterGrid</span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.decomposition <span class="im">import</span> PCA</span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> silhouette_score</span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a><span class="fu">## Data Analysis</span></span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a>Clustering algorithms can be applied to many real-world applications, including but not limited to security, anomaly detection, document clustering, stock market analysis, image compression, and so much more. The application I decided to approach with clustering is a song recommendation system. I found a dataset on Kaggle containing almost <span class="in">`114,000`</span> songs from the popular music streaming platform Spotify. Each entry in the dataset consists of many features including <span class="in">`artists`</span>, <span class="in">`track_name`</span>, <span class="in">`track_genre`</span>, <span class="in">`popularity`</span>, <span class="in">`danceability`</span>, and many more. </span>
+<span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a>Before I dive into the visualizaitons, I first dropped duplicates in the dataset to minimize problems with recommendations. Now, below are some visualizations showcasing certain features in a scatterplot. This gives me a rough idea what the dataset looks like with all of these features and genres.</span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-76"><a href="#cb17-76" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-77"><a href="#cb17-77" aria-hidden="true" tabindex="-1"></a>original_df <span class="op">=</span> pd.read_csv(<span class="st">&quot;./dataset-dedup.csv&quot;</span>)</span>
+<span id="cb17-78"><a href="#cb17-78" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(original_df.columns)</span>
+<span id="cb17-79"><a href="#cb17-79" aria-hidden="true" tabindex="-1"></a><span class="co"># original_df = original_df.drop_duplicates(subset=[&quot;artists&quot;, &quot;track_name&quot;], keep=&quot;first&quot;).reset_index()</span></span>
+<span id="cb17-80"><a href="#cb17-80" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(original_df.shape)</span>
+<span id="cb17-81"><a href="#cb17-81" aria-hidden="true" tabindex="-1"></a><span class="co"># original_df.to_csv(&quot;./dataset-dedup.csv&quot;)</span></span>
+<span id="cb17-82"><a href="#cb17-82" aria-hidden="true" tabindex="-1"></a>features_x <span class="op">=</span> [<span class="st">&quot;loudness&quot;</span>, <span class="st">&quot;popularity&quot;</span>, <span class="st">&quot;duration_ms&quot;</span>]</span>
+<span id="cb17-83"><a href="#cb17-83" aria-hidden="true" tabindex="-1"></a>features_y <span class="op">=</span> [<span class="st">&quot;popularity&quot;</span>, <span class="st">&quot;energy&quot;</span>, <span class="st">&quot;tempo&quot;</span>]</span>
+<span id="cb17-84"><a href="#cb17-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-85"><a href="#cb17-85" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, (x,y) <span class="kw">in</span> <span class="bu">enumerate</span>(<span class="bu">zip</span>(features_x, features_y)):</span>
+<span id="cb17-86"><a href="#cb17-86" aria-hidden="true" tabindex="-1"></a>    scatter <span class="op">=</span> sns.scatterplot(x<span class="op">=</span>x, y<span class="op">=</span>y, hue<span class="op">=</span><span class="st">&#39;track_genre&#39;</span>, data<span class="op">=</span>original_df, palette<span class="op">=</span><span class="st">&quot;viridis&quot;</span>, alpha<span class="op">=</span><span class="fl">0.25</span>)</span>
+<span id="cb17-87"><a href="#cb17-87" aria-hidden="true" tabindex="-1"></a>    legend_labels <span class="op">=</span> original_df[<span class="st">&#39;track_genre&#39;</span>].unique()<span class="co"># [:3]  # Show only the first 3 genres</span></span>
+<span id="cb17-88"><a href="#cb17-88" aria-hidden="true" tabindex="-1"></a>    scatter.legend(title<span class="op">=</span><span class="st">&#39;Genre&#39;</span>, labels<span class="op">=</span>legend_labels, prop<span class="op">=</span>{<span class="st">&#39;size&#39;</span>: <span class="dv">1</span>})</span>
+<span id="cb17-89"><a href="#cb17-89" aria-hidden="true" tabindex="-1"></a>    plt.title(<span class="ss">f&quot;Scatter Plot of </span><span class="sc">{</span>x<span class="sc">}</span><span class="ss"> vs </span><span class="sc">{</span>y<span class="sc">}</span><span class="ss"> by genre&quot;</span>)</span>
+<span id="cb17-90"><a href="#cb17-90" aria-hidden="true" tabindex="-1"></a>    plt.show()</span>
+<span id="cb17-91"><a href="#cb17-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-92"><a href="#cb17-92" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb17-93"><a href="#cb17-93" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-94"><a href="#cb17-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-95"><a href="#cb17-95" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-96"><a href="#cb17-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-97"><a href="#cb17-97" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-98"><a href="#cb17-98" aria-hidden="true" tabindex="-1"></a>unique_vals <span class="op">=</span> original_df[<span class="st">&#39;track_genre&#39;</span>].unique()</span>
+<span id="cb17-99"><a href="#cb17-99" aria-hidden="true" tabindex="-1"></a>plt.bar(unique_vals, original_df[<span class="st">&#39;track_genre&#39;</span>].value_counts())</span>
+<span id="cb17-100"><a href="#cb17-100" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&quot;Occurrence of Genre&quot;</span>)</span>
+<span id="cb17-101"><a href="#cb17-101" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">&quot;Count&quot;</span>)</span>
+<span id="cb17-102"><a href="#cb17-102" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">&quot;Genre&quot;</span>)</span>
+<span id="cb17-103"><a href="#cb17-103" aria-hidden="true" tabindex="-1"></a>_ <span class="op">=</span> plt.xticks(rotation<span class="op">=</span><span class="st">&quot;vertical&quot;</span>, fontsize<span class="op">=</span><span class="dv">4</span>)</span>
+<span id="cb17-104"><a href="#cb17-104" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-105"><a href="#cb17-105" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-106"><a href="#cb17-106" aria-hidden="true" tabindex="-1"></a>Because a lot of these continuous variables: <span class="in">`loudness`</span>, <span class="in">`popularity`</span>, <span class="in">`duration_ms`</span> overlap by genre significantly, I decided to drop these features during training, as well as many other features like <span class="in">`energy`</span>, <span class="in">`danceability`</span>, <span class="in">`acousticness`</span>, as these metrics are too complex, overlapping, and even subjective. As a Spotify consumer myself, I like when Spotify gives me songs related to the current artist I&#39;m listening to, so I thought important features in this dataset included: <span class="in">`artists`</span>, <span class="in">`track_genre`</span>, minimally. Although, I did try other features like <span class="in">`key`</span>, and <span class="in">`tempo`</span> on top of that.</span>
+<span id="cb17-107"><a href="#cb17-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-108"><a href="#cb17-108" aria-hidden="true" tabindex="-1"></a><span class="fu">## K-Means</span></span>
+<span id="cb17-109"><a href="#cb17-109" aria-hidden="true" tabindex="-1"></a>The K-Means algorithm clusters data by minimizing a criteria known as <span class="in">`intertia`</span>, the within-cluster sum-of-squares. The formula for inertia, specified in the K-means documentation for Sklearn, is noted below:</span>
+<span id="cb17-110"><a href="#cb17-110" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-111"><a href="#cb17-111" aria-hidden="true" tabindex="-1"></a>Noting some of the variables in the summation: <span class="in">`n`</span> is the number of datapoints, <span class="in">`mu`</span> is the mean of the cluster, also the cluster_centroid of the cluster <span class="in">`C`</span>, <span class="in">`||x_i - \mu||^2`</span> represents the squared euclidean distance between point <span class="in">`x_i`</span> and the centroid, and min() takes the min of the calculation</span>
+<span id="cb17-112"><a href="#cb17-112" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-113"><a href="#cb17-113" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb17-114"><a href="#cb17-114" aria-hidden="true" tabindex="-1"></a>\sum_{i=0}^{n}\min_{\mu_j \in C}(||x_i - \mu_j||^2)</span>
+<span id="cb17-115"><a href="#cb17-115" aria-hidden="true" tabindex="-1"></a>$$</span>
+<span id="cb17-116"><a href="#cb17-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-117"><a href="#cb17-117" aria-hidden="true" tabindex="-1"></a>It is worth noting that the inertia method has some drawbacks. According to Sklearn, intertia makes the assumption that clusters are convex and isotropic, which may not always be the case. The documentation also states that inertia isn&#39;t a &quot;normalized metric&quot;, so running PCA (principal component analysis) before the K-means clustering is beneficial (which is exactly what I did in later steps).</span>
+<span id="cb17-118"><a href="#cb17-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-119"><a href="#cb17-119" aria-hidden="true" tabindex="-1"></a>A great benefit to K-means is its scalability to large sample sets, which is good for this problem since there are now <span class="in">`81,344`</span> points.</span>
+<span id="cb17-120"><a href="#cb17-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-121"><a href="#cb17-121" aria-hidden="true" tabindex="-1"></a><span class="fu">### Hyperparameter Tuning</span></span>
+<span id="cb17-122"><a href="#cb17-122" aria-hidden="true" tabindex="-1"></a>The biggest hyperparameter for K-means is the number of clusters <span class="in">`n_clusters`</span>. This hyperparameter is the amount of clusters to generate for the problem. Because the number of clusters largely effects the results of the model, it is important to tune this. In order to chose the best value, I loop through different values up to 80.</span>
+<span id="cb17-123"><a href="#cb17-123" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-124"><a href="#cb17-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-125"><a href="#cb17-125" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-126"><a href="#cb17-126" aria-hidden="true" tabindex="-1"></a>inertia <span class="op">=</span> []</span>
+<span id="cb17-127"><a href="#cb17-127" aria-hidden="true" tabindex="-1"></a><span class="co"># train_df is the numeric representation of original_df</span></span>
+<span id="cb17-128"><a href="#cb17-128" aria-hidden="true" tabindex="-1"></a>train_df <span class="op">=</span> original_df.drop(columns<span class="op">=</span>[<span class="st">&#39;Unnamed: 0.1&#39;</span>, <span class="st">&#39;index&#39;</span>, <span class="st">&#39;Unnamed: 0&#39;</span>, <span class="st">&#39;track_id&#39;</span>,</span>
+<span id="cb17-129"><a href="#cb17-129" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;album_name&#39;</span>, <span class="st">&#39;track_name&#39;</span>, <span class="st">&#39;popularity&#39;</span>, <span class="st">&#39;duration_ms&#39;</span>, <span class="st">&#39;explicit&#39;</span>,</span>
+<span id="cb17-130"><a href="#cb17-130" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;danceability&#39;</span>, <span class="st">&#39;energy&#39;</span>, <span class="st">&#39;loudness&#39;</span>, <span class="st">&#39;mode&#39;</span>, <span class="st">&#39;speechiness&#39;</span>,</span>
+<span id="cb17-131"><a href="#cb17-131" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;acousticness&#39;</span>, <span class="st">&#39;instrumentalness&#39;</span>, <span class="st">&#39;liveness&#39;</span>, <span class="st">&#39;valence&#39;</span>, <span class="st">&#39;tempo&#39;</span>,</span>
+<span id="cb17-132"><a href="#cb17-132" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;time_signature&#39;</span>])</span>
+<span id="cb17-133"><a href="#cb17-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-134"><a href="#cb17-134" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> col <span class="kw">in</span> train_df.columns:</span>
+<span id="cb17-135"><a href="#cb17-135" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> pd.api.types.is_numeric_dtype(train_df[col]):</span>
+<span id="cb17-136"><a href="#cb17-136" aria-hidden="true" tabindex="-1"></a>        train_df[col] <span class="op">=</span> pd.factorize(original_df[col])[<span class="dv">0</span>]</span>
+<span id="cb17-137"><a href="#cb17-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-138"><a href="#cb17-138" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb17-139"><a href="#cb17-139" aria-hidden="true" tabindex="-1"></a><span class="co"># df_scaled is the scaled version of train_df</span></span>
+<span id="cb17-140"><a href="#cb17-140" aria-hidden="true" tabindex="-1"></a>df_scaled <span class="op">=</span> scaler.fit_transform(train_df)</span>
+<span id="cb17-141"><a href="#cb17-141" aria-hidden="true" tabindex="-1"></a>pca_num_components <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb17-142"><a href="#cb17-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-143"><a href="#cb17-143" aria-hidden="true" tabindex="-1"></a><span class="co"># df_pca to reduce dimensionality</span></span>
+<span id="cb17-144"><a href="#cb17-144" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span>pca_num_components).fit_transform(df_scaled)</span>
+<span id="cb17-145"><a href="#cb17-145" aria-hidden="true" tabindex="-1"></a>df_pca <span class="op">=</span> pd.DataFrame(pca,columns<span class="op">=</span>[<span class="st">&#39;pca1&#39;</span>,<span class="st">&#39;pca2&#39;</span>])</span>
+<span id="cb17-146"><a href="#cb17-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-147"><a href="#cb17-147" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> k <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">80</span>, <span class="dv">10</span>):</span>
+<span id="cb17-148"><a href="#cb17-148" aria-hidden="true" tabindex="-1"></a>    kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span>k, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb17-149"><a href="#cb17-149" aria-hidden="true" tabindex="-1"></a>    kmeans.fit_predict(df_pca)</span>
+<span id="cb17-150"><a href="#cb17-150" aria-hidden="true" tabindex="-1"></a>    inertia.append(kmeans.inertia_)</span>
+<span id="cb17-151"><a href="#cb17-151" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-152"><a href="#cb17-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-153"><a href="#cb17-153" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-154"><a href="#cb17-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-155"><a href="#cb17-155" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-156"><a href="#cb17-156" aria-hidden="true" tabindex="-1"></a>plt.plot(<span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">80</span>, <span class="dv">10</span>), inertia, marker<span class="op">=</span><span class="st">&#39;o&#39;</span>)</span>
+<span id="cb17-157"><a href="#cb17-157" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;Elbow Method for Optimal K&#39;</span>)</span>
+<span id="cb17-158"><a href="#cb17-158" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">&#39;Number of Clusters (K)&#39;</span>)</span>
+<span id="cb17-159"><a href="#cb17-159" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">&#39;Inertia (Within-Cluster Sum of Squares)&#39;</span>)</span>
+<span id="cb17-160"><a href="#cb17-160" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb17-161"><a href="#cb17-161" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-162"><a href="#cb17-162" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-163"><a href="#cb17-163" aria-hidden="true" tabindex="-1"></a>The elbow chart is a great way to visualize intertia vs number of clusters on the dataset. Since our goal is to generalize well, it&#39;s not the best to choose the &quot;lowest&quot; inertia value. It is generally recommended in practice to choose the &quot;elbow point&quot;; I chose <span class="in">`10`</span> as this looks very close to an elbow point for this distribution. Although, one drawback to this approach is its subjectiveness-- you might think the elbow point is 12, whereas I think the elbow point is 10.</span>
+<span id="cb17-164"><a href="#cb17-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-165"><a href="#cb17-165" aria-hidden="true" tabindex="-1"></a><span class="fu">### K-Means for Spotify</span></span>
+<span id="cb17-166"><a href="#cb17-166" aria-hidden="true" tabindex="-1"></a>After taking the resulting elbow point, I run that through my own instance of kmeans, utilizing the Sklearn library, and store the predicted results into the original dataframe.</span>
+<span id="cb17-167"><a href="#cb17-167" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-168"><a href="#cb17-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-169"><a href="#cb17-169" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-170"><a href="#cb17-170" aria-hidden="true" tabindex="-1"></a>kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb17-171"><a href="#cb17-171" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;clusters&#39;</span>] <span class="op">=</span> kmeans.fit_predict(df_pca)</span>
+<span id="cb17-172"><a href="#cb17-172" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-173"><a href="#cb17-173" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-174"><a href="#cb17-174" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-175"><a href="#cb17-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-176"><a href="#cb17-176" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-177"><a href="#cb17-177" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(x<span class="op">=</span><span class="st">&quot;pca1&quot;</span>, y<span class="op">=</span><span class="st">&quot;pca2&quot;</span>, hue<span class="op">=</span>original_df[<span class="st">&#39;clusters&#39;</span>], data<span class="op">=</span>df_pca)</span>
+<span id="cb17-178"><a href="#cb17-178" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;K-means Clustering PCA of 3 features [track_genre, artists, key]&#39;</span>)</span>
+<span id="cb17-179"><a href="#cb17-179" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb17-180"><a href="#cb17-180" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-181"><a href="#cb17-181" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-182"><a href="#cb17-182" aria-hidden="true" tabindex="-1"></a>This is a PCA visualization of the clusters on the feature set <span class="in">`track_genre`</span>, <span class="in">`artists`</span> and <span class="in">`key`</span>. </span>
+<span id="cb17-183"><a href="#cb17-183" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-184"><a href="#cb17-184" aria-hidden="true" tabindex="-1"></a><span class="fu">## Evaluating K-Means for Spotify</span></span>
+<span id="cb17-185"><a href="#cb17-185" aria-hidden="true" tabindex="-1"></a>Below are some sample mini-clusters. Since the goal of this overall problem is to recommend music based on certain songs, I decided to create a function that grabs an entry from the CSV file, finds the cluster it&#39;s in, and computes the k-nearest neighbors of that song. These nearest neighbors would be the &quot;recommendation&quot; songs, in order.</span>
+<span id="cb17-186"><a href="#cb17-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-187"><a href="#cb17-187" aria-hidden="true" tabindex="-1"></a>The general idea we should see with these mini-clusters are songs that resemble the query song. In the case of the first example, I ran my function on Daughtry&#39;s song &quot;Home&quot;. The recommended song (top 1) example was another Daughtry song &quot;It&#39;s Not Over&quot;.</span>
+<span id="cb17-188"><a href="#cb17-188" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-189"><a href="#cb17-189" aria-hidden="true" tabindex="-1"></a>When testing out different K-means implementations on different features, I found that simplicity is key. Having a ton of features is great for any dataset, but knowing how they interact with each other and how to simplify the problem makes for better results. I tested many different subsests of features including:</span>
+<span id="cb17-190"><a href="#cb17-190" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-191"><a href="#cb17-191" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>all of the original dataset features (n=20)</span>
+<span id="cb17-192"><a href="#cb17-192" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>subset of continuous variables</span>
+<span id="cb17-193"><a href="#cb17-193" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>subset of just track_genre and artists</span>
+<span id="cb17-194"><a href="#cb17-194" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>subset of track_genre, artists, tempo, and key. All of which are discrete, factual features.</span>
+<span id="cb17-195"><a href="#cb17-195" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>subset of track_genre, artists, and key.</span>
+<span id="cb17-196"><a href="#cb17-196" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-197"><a href="#cb17-197" aria-hidden="true" tabindex="-1"></a>My final result ended up being the last option, although those did not generate the most <span class="in">`similar`</span> clusters, especially compared to option 3. Although, I chose the last option as I was trying to find similar songs while spanning across other artists. Option 5 seemed to give me similar options across at least one or more genres with different artists. It is worth noting that some of the results gave me the same artists, which is good since those are similar songs too. </span>
+<span id="cb17-198"><a href="#cb17-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-199"><a href="#cb17-199" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-200"><a href="#cb17-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-201"><a href="#cb17-201" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-202"><a href="#cb17-202" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;Distance_to_Centroid&#39;</span>] <span class="op">=</span> kmeans.transform(df_pca).<span class="bu">min</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb17-203"><a href="#cb17-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-204"><a href="#cb17-204" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_nearest_entry(idx, k<span class="op">=</span><span class="dv">5</span>):</span>
+<span id="cb17-205"><a href="#cb17-205" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(original_df.iloc[idx])</span></span>
+<span id="cb17-206"><a href="#cb17-206" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(train_df.iloc[idx])</span></span>
+<span id="cb17-207"><a href="#cb17-207" aria-hidden="true" tabindex="-1"></a>    cluster <span class="op">=</span> kmeans.predict(df_pca.iloc[idx].to_frame().T)[<span class="dv">0</span>]</span>
+<span id="cb17-208"><a href="#cb17-208" aria-hidden="true" tabindex="-1"></a>    cluster_data <span class="op">=</span> original_df[original_df[<span class="st">&quot;clusters&quot;</span>] <span class="op">==</span> cluster]</span>
+<span id="cb17-209"><a href="#cb17-209" aria-hidden="true" tabindex="-1"></a>    cluster_data[<span class="st">&quot;closest_entries_to_idx&quot;</span>] <span class="op">=</span> (cluster_data[<span class="st">&quot;Distance_to_Centroid&quot;</span>] <span class="op">-</span> cluster_data.loc[idx][<span class="st">&quot;Distance_to_Centroid&quot;</span>]).<span class="bu">abs</span>()</span>
+<span id="cb17-210"><a href="#cb17-210" aria-hidden="true" tabindex="-1"></a>    cluster_data <span class="op">=</span> cluster_data.sort_values(by<span class="op">=</span><span class="st">&quot;closest_entries_to_idx&quot;</span>)</span>
+<span id="cb17-211"><a href="#cb17-211" aria-hidden="true" tabindex="-1"></a>    <span class="co"># print(cluster_data[[&quot;artists&quot;, &quot;album_name&quot;, &quot;track_name&quot;, &quot;track_genre&quot;]])</span></span>
+<span id="cb17-212"><a href="#cb17-212" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-213"><a href="#cb17-213" aria-hidden="true" tabindex="-1"></a>    cluster_data.drop(columns<span class="op">=</span>[<span class="st">&quot;closest_entries_to_idx&quot;</span>])</span>
+<span id="cb17-214"><a href="#cb17-214" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Top </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> Closest Examples to </span><span class="sc">{</span>cluster_data<span class="sc">.</span>loc[idx][<span class="st">&#39;artists&#39;</span>]<span class="sc">}</span><span class="ss">&#39;s </span><span class="ch">\&quot;</span><span class="sc">{</span>cluster_data<span class="sc">.</span>loc[idx][<span class="st">&#39;track_name&#39;</span>]<span class="sc">}</span><span class="ch">\&quot;</span><span class="ss">&quot;</span>)</span>
+<span id="cb17-215"><a href="#cb17-215" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(cluster_data[:k][[<span class="st">&quot;artists&quot;</span>, <span class="st">&quot;track_name&quot;</span>, <span class="st">&quot;track_genre&quot;</span>]])</span>
+<span id="cb17-216"><a href="#cb17-216" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;</span><span class="ch">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb17-217"><a href="#cb17-217" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-218"><a href="#cb17-218" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">35640</span>) <span class="co"># rock song</span></span>
+<span id="cb17-219"><a href="#cb17-219" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">16587</span>) <span class="co"># country song</span></span>
+<span id="cb17-220"><a href="#cb17-220" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">41220</span>) <span class="co"># rap song</span></span>
+<span id="cb17-221"><a href="#cb17-221" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-222"><a href="#cb17-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-223"><a href="#cb17-223" aria-hidden="true" tabindex="-1"></a>Option 3 on the other hand gave me different songs for the same artists, which is fine for a recommendation system, but not what I was exactly going for. Below is a visualization of the clusters with just two features as well as its predictions.</span>
+<span id="cb17-224"><a href="#cb17-224" aria-hidden="true" tabindex="-1"></a>quarto-executable-code-5450563D</span>
+<span id="cb17-225"><a href="#cb17-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-226"><a href="#cb17-226" aria-hidden="true" tabindex="-1"></a><span class="in">```python</span></span>
+<span id="cb17-227"><a href="#cb17-227" aria-hidden="true" tabindex="-1"></a>original_df <span class="op">=</span> pd.read_csv(<span class="st">&quot;./dataset-dedup.csv&quot;</span>)</span>
+<span id="cb17-228"><a href="#cb17-228" aria-hidden="true" tabindex="-1"></a><span class="co"># train_df is the numeric representation of original_df</span></span>
+<span id="cb17-229"><a href="#cb17-229" aria-hidden="true" tabindex="-1"></a>train_df <span class="op">=</span> original_df.drop(columns<span class="op">=</span>[<span class="st">&#39;Unnamed: 0.1&#39;</span>, <span class="st">&#39;index&#39;</span>, <span class="st">&#39;Unnamed: 0&#39;</span>, <span class="st">&#39;track_id&#39;</span>,</span>
+<span id="cb17-230"><a href="#cb17-230" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;album_name&#39;</span>, <span class="st">&#39;track_name&#39;</span>, <span class="st">&#39;popularity&#39;</span>, <span class="st">&#39;duration_ms&#39;</span>, <span class="st">&#39;explicit&#39;</span>,</span>
+<span id="cb17-231"><a href="#cb17-231" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;danceability&#39;</span>, <span class="st">&#39;key&#39;</span>, <span class="st">&#39;energy&#39;</span>, <span class="st">&#39;loudness&#39;</span>, <span class="st">&#39;mode&#39;</span>, <span class="st">&#39;speechiness&#39;</span>,</span>
+<span id="cb17-232"><a href="#cb17-232" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;acousticness&#39;</span>, <span class="st">&#39;instrumentalness&#39;</span>, <span class="st">&#39;liveness&#39;</span>, <span class="st">&#39;valence&#39;</span>, <span class="st">&#39;tempo&#39;</span>,</span>
+<span id="cb17-233"><a href="#cb17-233" aria-hidden="true" tabindex="-1"></a>       <span class="st">&#39;time_signature&#39;</span>])</span>
+<span id="cb17-234"><a href="#cb17-234" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-235"><a href="#cb17-235" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> col <span class="kw">in</span> train_df.columns:</span>
+<span id="cb17-236"><a href="#cb17-236" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> pd.api.types.is_numeric_dtype(train_df[col]):</span>
+<span id="cb17-237"><a href="#cb17-237" aria-hidden="true" tabindex="-1"></a>        train_df[col] <span class="op">=</span> pd.factorize(original_df[col])[<span class="dv">0</span>]</span>
+<span id="cb17-238"><a href="#cb17-238" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-239"><a href="#cb17-239" aria-hidden="true" tabindex="-1"></a>scaler <span class="op">=</span> StandardScaler()</span>
+<span id="cb17-240"><a href="#cb17-240" aria-hidden="true" tabindex="-1"></a><span class="co"># df_scaled is the scaled version of train_df</span></span>
+<span id="cb17-241"><a href="#cb17-241" aria-hidden="true" tabindex="-1"></a>df_scaled <span class="op">=</span> scaler.fit_transform(train_df)</span>
+<span id="cb17-242"><a href="#cb17-242" aria-hidden="true" tabindex="-1"></a>pca_num_components <span class="op">=</span> <span class="dv">2</span></span>
+<span id="cb17-243"><a href="#cb17-243" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-244"><a href="#cb17-244" aria-hidden="true" tabindex="-1"></a><span class="co"># df_pca to reduce dimensionality</span></span>
+<span id="cb17-245"><a href="#cb17-245" aria-hidden="true" tabindex="-1"></a>pca <span class="op">=</span> PCA(n_components<span class="op">=</span>pca_num_components).fit_transform(df_scaled)</span>
+<span id="cb17-246"><a href="#cb17-246" aria-hidden="true" tabindex="-1"></a>df_pca <span class="op">=</span> pd.DataFrame(pca,columns<span class="op">=</span>[<span class="st">&#39;pca1&#39;</span>,<span class="st">&#39;pca2&#39;</span>])</span>
+<span id="cb17-247"><a href="#cb17-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-248"><a href="#cb17-248" aria-hidden="true" tabindex="-1"></a>kmeans <span class="op">=</span> KMeans(n_clusters<span class="op">=</span><span class="dv">10</span>, random_state<span class="op">=</span><span class="dv">42</span>)</span>
+<span id="cb17-249"><a href="#cb17-249" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;clusters&#39;</span>] <span class="op">=</span> kmeans.fit_predict(df_pca)</span>
+<span id="cb17-250"><a href="#cb17-250" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-251"><a href="#cb17-251" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(x<span class="op">=</span><span class="st">&quot;pca1&quot;</span>, y<span class="op">=</span><span class="st">&quot;pca2&quot;</span>, hue<span class="op">=</span>original_df[<span class="st">&#39;clusters&#39;</span>], data<span class="op">=</span>df_pca)</span>
+<span id="cb17-252"><a href="#cb17-252" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">&#39;K-means Clustering PCA of 2 features [track_genre, artists]&#39;</span>)</span>
+<span id="cb17-253"><a href="#cb17-253" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb17-254"><a href="#cb17-254" aria-hidden="true" tabindex="-1"></a>original_df[<span class="st">&#39;Distance_to_Centroid&#39;</span>] <span class="op">=</span> kmeans.transform(df_pca).<span class="bu">min</span>(axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb17-255"><a href="#cb17-255" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">35640</span>) <span class="co"># rock song</span></span>
+<span id="cb17-256"><a href="#cb17-256" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">16587</span>) <span class="co"># country song</span></span>
+<span id="cb17-257"><a href="#cb17-257" aria-hidden="true" tabindex="-1"></a>get_nearest_entry(<span class="dv">41220</span>) <span class="co"># rap song</span></span>
+<span id="cb17-258"><a href="#cb17-258" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb17-259"><a href="#cb17-259" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-260"><a href="#cb17-260" aria-hidden="true" tabindex="-1"></a><span class="fu">## Conclusion</span></span>
+<span id="cb17-261"><a href="#cb17-261" aria-hidden="true" tabindex="-1"></a>In this blog post, I used K-means as a clustering algorithm for a song recommendation system. Though K-means does a good job at coming up with clusters and generating similar examples, other clustering algorithms such as DBSCAN may be a suitable option as well. In general, what I like about clustering algorithms for this problem domain, especially K-means, is its free range to determine what logical clusters should look like and its intuitiveness. There&#39;s not only one correct way to do K-means.</span></code></pre></div>
+</div>
+</section>
+
+</main> <!-- /main -->
+<script id = "quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<div class= "page-columns page-rows-contents page-layout-article"><div class="social-share"><a href="https://twitter.com/share?url=https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/&text=Spotify Recommendation System Using K-Means" target="_blank" class="twitter"><i class="fab fa-twitter fa-fw fa-lg"></i></a><a href="https://www.linkedin.com/shareArticle?url=https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/&title=Spotify Recommendation System Using K-Means" target="_blank" class="linkedin"><i class="fa-brands fa-linkedin-in fa-fw fa-lg"></i></a>  <a href="mailto:?subject=Spotify Recommendation System Using K-Means&body=Check out this link:https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/" target="_blank" class="email"><i class="fa-solid fa-envelope fa-fw fa-lg"></i></a><a href="https://www.facebook.com/sharer.php?u=https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/" target="_blank" class="facebook"><i class="fab fa-facebook-f fa-fw fa-lg"></i></a><a href="https://reddit.com/submit?url=https://hassledw.github.io/ML-blog-posts/posts/ClusteringBlog/&title=Spotify Recommendation System Using K-Means" target="_blank" class="reddit">   <i class="fa-brands fa-reddit-alien fa-fw fa-lg"></i></a></div></div>
+
+</body>
+
+</html>

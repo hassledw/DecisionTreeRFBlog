@@ -1,0 +1,10 @@
+.social-icons {
+    margin-right: 20px; /* Add some spacing between icons */
+}
+  
+.social-icons a {
+color: #333; /* Change color as needed */
+font-size: 20px;
+margin-right: 10px; /* Add spacing between icons */
+}
+  

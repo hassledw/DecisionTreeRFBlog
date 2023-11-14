@@ -1,0 +1,12 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/RegressionBlog/index.html",
+      "/posts/ClusteringBlog/index.html",
+      "/posts/NaiveBayesBlog/index.html",
+      "/posts/AnomalyDetectionBlog/index.html",
+      "/posts/DecisionTreeRFBlog/index.html"
+    ]
+  }
+]

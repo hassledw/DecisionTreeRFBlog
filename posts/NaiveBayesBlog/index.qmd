@@ -1,0 +1,177 @@
+---
+execute:
+  echo: fenced
+title: "Probability Theory with Naive Bayes Application"
+author: "Daniel Hassler"
+date: "2023-11-05"
+categories: [code, probability]
+image: "bayes.png"
+toc: true
+toc-title: "Table of contents"
+format:
+  html:
+    embed-resources: true
+    code-copy: true
+    code-link: true
+    code-tools: true
+    theme:
+      dark: darkly
+      light: flatly
+    pdf:
+      title: "NaiveBayesProbTheory"
+      author: "Daniel Hassler"
+      pdf-engine: "C:/Program Files (x86)/wkhtmltopdf"
+  docx: default
+  ipynb: default
+  gfm: default
+
+filters:
+  - social-share
+share:
+  permalink: "https://hassledw.github.io/ML-blog-posts/posts/NaiveBayesBlog/"
+  description: "Probability Theory with Naive Bayes Application"
+  twitter: true
+  facebook: true
+  reddit: true
+  stumble: false
+  tumblr: false
+  linkedin: true
+  email: true
+
+jupyter: python3
+---
+<!-- title: "Comparing Decision Tree and Random Forest Classifier Performance"
+format:
+  html:
+    code-fold: true
+jupyter: python3 -->
+**Author: Daniel Hassler**
+
+<link rel="stylesheet" type="text/css" href="./index.css">
+<div class="social-icons">
+  <a href="https://github.com/hassledw"><i class="fab fa-github"></i></a>
+  <a href="https://www.linkedin.com/in/daniel-hassler-85027a21a/"><i class="fab fa-linkedin"></i></a>
+  <!-- Add more social media links/icons as needed -->
+</div>
+
+```{python}
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import mnist
+
+from sklearn.naive_bayes import MultinomialNB, GaussianNB
+from sklearn.metrics import confusion_matrix
+```
+
+## Data
+Before diving into the probability theory and using Naive Bayes, I will first introduce the dataset I am using for this application.
+
+The dataset I am using to explain probability theory with Naive Bayes is the MNIST dataset, a large dataset containing pictures/drawings of digits 0-9. There are `60,000` training images and `10,000` testing images in my particular dataset.
+
+Below, is a visualization of one entry in the training set and one entry in the test set to show what these digits look like.
+```{python}
+# mnist.init()
+X_train, y_train, X_test, y_test = mnist.load()
+print("X_train len: ", len(X_train))
+print("X_test len: ", len(X_test))
+print("X_train shape: ", X_train.shape)
+print("X_test shape: ", X_test.shape)
+
+plt.subplot(1, 2, 1)
+plt.title("Entry in Train Set")
+img = X_train[0,:].reshape(28,28) # First image in the training set.
+plt.imshow(img,cmap='gray')
+
+plt.subplot(1, 2, 2)
+plt.title("Entry in Test Set")
+img = X_test[0,:].reshape(28,28) # First image in the test set.
+plt.imshow(img,cmap='gray')
+plt.show() # Show the image
+```
+
+Here is a visualization showing a unique entry in the `X_train` data for each digit.
+```{python}
+unique_values, indices = np.unique(y_train, return_index=True)
+
+for i, label_index in enumerate(indices):
+    plt.subplot(1, len(indices), i + 1)
+    img = X_train[label_index,:].reshape(28,28)
+    plt.imshow(img,cmap='gray')
+plt.show()
+```
+
+## Naive Bayes Background
+A fundamental concept in probability theory is **Bayes' Theorem**. The theorem is used to update the belief of an event occuring given new evidence:
+$$
+ P(A|B) =
+  \frac{ P(B|A)P(A)}{
+       P(B)}
+$$
+
+In the theorem above, `P(A|B)` is represented as the probability of event A occurring given event B occurred. `P(B|A)` is the probability of B occurring given that event A occured. `P(A)` and `P(B)` are independent events.
+
+**Naive Bayes** is a machine learning algorithm that relies on the concept of Bayes Theorem and idea of conditional independence. In an application using Naive Bayes, we are assuming that the features are independent of each other (naive assumption), which is rarely ever true in real world scenarios, but it is a valid benchmark and has some benefits. This is the overall idea of the application of Bayes' Theorem with Naive Bayes:
+$$
+ P(C|X) =
+  \frac{ P(X|C)P(C)}{
+       P(X)}
+$$
+
+The goal is to find the probability of class `C` given observation `X`. In our case with the MNIST dataset, `X` is the feature set that represents every pixel in the 28x28 images (784 total features) and `C` is a representation of all the classes, digits 0-9. The naive assumption with the MNIST dataset is treating the pixels as independent observations.
+
+First, we can get the `prior` probabilities, represented as `P(C)` from the training set itself. This is the probability occurrence of each class in the dataset. I calculated this by this equation, where `N_c` is the number of occurrences of class c and `N` is the sum of all classes occurrences.
+$$
+P(C=c) = \frac{N_c}{N}
+$$
+
+We can then get the likelihood probability `P(X|C)`, the probability of the feature (pixel) given class `C`. We can get this directly from the training data itself. We can get this by observing the data or by calculating the probability density function if we're assuming the data flows like a Gaussian distribution.
+
+
+`P(C|X)`, the posterior probability, represents the probability of class `C` given feature `X`. Based on this, in our prediction stage with Naive Bayes, we are taking the class with the **max** probability to get the classification.
+
+
+## Naive Bayes Classification
+For the purposes of explaining probability theory with NB, visualizing data, speed consideration, and understanding of naive bayes on the MNIST dataset, I decided to go with sklearn's `GaussianNB` model, which is a commonly used baseline model for a lot of distributions that follow a Gaussian distribution. By chosing this model, I am assuming that my MNIST data follows a Gaussian distribution, but the data itself doesn't directly follow this assumption. So, compared to other methods like CNNs (see improvements), we will see a performance degredation with this model, as MNIST pixels are not normally distributed. Although, the performance of this model we will see is "reasonable" and better than expected, especially since we can still assume conditional independence between the features, which is a large assumption for Naive Bayes. 
+
+For the hyperparameter values, I gathered the dataset's `prior` distribution by simply taking the frequency of the dataset and dividing it by the sum of all the frequencies, and then passed it into the `GaussianNB` model. Another parameter I had to tune is the `var_smoothing` value. This value is used to prevent any division by zero during probability estimation. By default, sklearn sets this value to `1e-09`, but the effectiveness of this value depends on the dataset, so in the end, I found `0.1` to have the best accuracy performance.
+```{python}
+unique, counts = np.unique(y_train, return_counts=True)
+sum_counts = np.sum(counts)
+priors = np.divide(counts, sum_counts)
+
+nb = GaussianNB(priors=priors, var_smoothing=0.1)
+nb.fit(X_train, y_train)
+y_pred = nb.predict(X_test)
+print("Priors: ", nb.priors)
+```
+
+## Results
+In order to evaluate the preformance of the `GaussianNB` classifier, I ran a confusion matrix to visualize where the predictions fall. As you can see, we have around 81% accuracy on our given classifier, which is about what we expected for this dataset.
+```{python}
+confusion_matrix = confusion_matrix(y_test, y_pred)
+conf_df = pd.DataFrame(confusion_matrix, index=[f"{i}" for i in range(10)], columns=[f"{i}" for i in range(10)])
+heatmap = sns.heatmap(conf_df, annot=True, fmt="d", linewidths=0.35, cmap="YlGnBu")
+plt.title(f"Model Predictions With {(np.sum(confusion_matrix.diagonal()) / y_test.shape[0]) * 100:.2f}% Accuracy")
+```
+
+Next, I used the `GaussianNB` theta value to extract the `mean_pixel_values`, which stores the estimated mean of each pixel for every class. This visualization plots a heatmap of each pixel, where the pixels that are highlighted in yellow have the highest mean for that digit and the dark blue being the lowest.
+```{python}
+mean_pixel_values = nb.theta_
+plt.figure(figsize=(5,10))
+for i, digit in enumerate(range(10)):
+    plt.subplot(len(indices) // 2, 2, i + 1)
+    plt.title(f"Digit {digit}")
+    plt.axis('off')
+    img = mean_pixel_values[digit].reshape(28,28)
+    plt.imshow(img)
+plt.plot()
+```
+
+## Improvements
+Though we achieve decent accuracy with the MNIST dataset using `GaussianNB` classifier, this model has one big flaw for image classification; it only looks at the discretized values for specific points in the image. What would happen if I shifted the "0" or "9" to a different section of the image (not centered)? it would not be able to classify this case effectively.
+
+A way to fix the above limitation is using convolutional neural networks (CNNs), which is a deep learning classifier used in a lot of computer vision and even NLP related applications. Its main feature is using the idea of a "sliding window" to find more meaningful representations, which means the location of the object we're classifying is less important.
+
+

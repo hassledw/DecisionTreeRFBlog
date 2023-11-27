@@ -1,6 +1,0 @@
-linear regression -- SVM (with specific kernel)
-non-linear regression -- Any model (DT, RF) or SVM with different kernel.
-
-probability and random variables -- Naive Bayes
-
-clustering -- k-means

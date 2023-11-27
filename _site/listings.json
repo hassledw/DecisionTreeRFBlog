@@ -2,10 +2,11 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/AudioSegmentOutlierBlog/index.html",
       "/posts/RegressionBlog/index.html",
       "/posts/ClusteringBlog/index.html",
       "/posts/NaiveBayesBlog/index.html",
-      "/posts/AnomalyDetectionBlog/index.html",
+      "/posts/DBSCANBlog/index.html",
       "/posts/DecisionTreeRFBlog/index.html"
     ]
   }
